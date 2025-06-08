@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ICU Admission And Discharge Criteria</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #3498db 0%, #6dd5fa 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      #theme-toggle {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        padding: 8px 14px;
+        font-size: 14px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #2980b9;
+        color: white;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.3s ease;
+        z-index: 1000;
+      }
+
+      #theme-toggle:hover {
+        background-color: #1c5980;
+      }
+
+      .container {
+        width: 420px;
+        background: #ffffff;
+        padding: 30px 25px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      #question-text {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 25px;
+        color: #333;
+        padding: 14px 20px;
+        background-color: #e3f2fd;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+        user-select: none;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .btn-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      button {
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background-color: #3498db;
+        color: white;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+        transform: scale(1.02);
+      }
+
+      button:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+      }
+
+      .correct,
+      .correct:hover {
+        background-color: #2ecc71 !important;
+      }
+
+      .wrong,
+      .wrong:hover {
+        background-color: #e74c3c !important;
+      }
+
+      .answer-btn:last-of-type {
+        margin-bottom: 10px;
+      }
+
+      #question-number {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #666;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      #result-box {
+        margin-top: 20px;
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+        padding: 12px;
+        background-color: #dfefff;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      body.dark {
+        background: linear-gradient(135deg, #181818 0%, #0c0c0c 100%);
+        color: #ddd;
+      }
+
+      body.dark .container {
+        background: #1c1c1c;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      }
+
+      body.dark #question-text {
+        background-color: #353535;
+        color: #f0f0f0;
+        box-shadow: 0 5px 1px rgba(70, 130, 180, 0.5);
+      }
+
+      body.dark #question-number {
+        color: #bbb;
+      }
+
+      body.dark #result-box {
+        background-color: #3a3a3a;
+        color: #eee;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      }
+
+      body.dark button {
+        background-color: #1b4f72;
+      }
+
+      body.dark button:hover {
+        background-color: #1c5980;
+      }
+
+      body.dark button:disabled {
+        background-color: #555;
+      }
+
+      body.dark .correct,
+      body.dark .correct:hover {
+        background-color: #27ae60;
+      }
+
+      body.dark .wrong,
+      body.dark .wrong:hover {
+        background-color: #c0392b;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="theme-toggle">Dark mode</button>
+
+    <div class="container">
+      <h2 id="quiz-title">ICU Admission And Discharge Criteria</h2>
+
+      <div id="start-box">
+        <button id="start-btn">Start</button>
+      </div>
+
+      <div id="quiz-box" class="hide">
+        <div id="question-number"></div>
+        <div id="question-text"></div>
+        <div id="answer-buttons" class="btn-grid"></div>
+        <button id="next-btn" disabled>Next</button>
+      </div>
+
+      <div id="result-box" class="hide">
+        <h3>Your Score</h3>
+        <p id="score-text"></p>
+        <button id="try-again-btn">Try Again</button>
+      </div>
+    </div>
+
+    <script>
+      const allQuestions = [
+        // Book Questions
+        {
+          question:
+            "A patient requires a temporary cardiac pacemaker for arrhythmia control is classified as:",
+          options: [
+            "Basic Cardiovascular Support",
+            "Advanced Cardiovascular Support",
+            "Basic Respiratory Support",
+            "Intermediate Care",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question: "Which of the following is NOT a type of ICU?",
+          options: [
+            "Medical ICU",
+            "Surgical ICU",
+            "Geriatric ICU",
+            "Neonatal ICU",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "Which ICU level is assigned to a patient requiring invasive mechanical ventilation via an endotracheal tube?",
+          options: ["Level 1", "Level 2", "Level 3", "Level 0"],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "Which is a Priority 1 patient according to the Triage-Based Prioritization Model?",
+          options: [
+            "A stable diabetic ketoacidosis patient",
+            "A patient requiring mechanical circulatory support",
+            "A patient with end-stage cancer unresponsive to chemotherapy",
+            "A patient with mild heart failure",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Which member in the ICU is responsible for managing ventilators and oxygen therapy?",
+          options: [
+            "Intensivist",
+            "ICU Nurse",
+            "Respiratory Therapist",
+            "Pharmacist",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "A patient with acute renal failure requiring continuous renal replacement therapy (CRRT) belongs to which ICU level?",
+          options: ["Level 1", "Level 2", "Level 3", "Level 4"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Which of the following is an example of a diagnosis-based ICU admission criterion?",
+          options: [
+            "HR < 40 bpm",
+            "Cardiogenic shock",
+            "Blood glucose > 800 mg/dL",
+            "MAP < 60 mmHg",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Which of the following is NOT an objective parameter for ICU admission?",
+          options: [
+            "PaO₂ < 50 mmHg",
+            "Glucose > 800 mg/dL",
+            "DBP < 80 mmHg",
+            "Serum potassium > 7.0 mEq/L",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "Which monitoring system is used to assess cardiac output and pulmonary pressures in ICU patients?",
+          options: [
+            "EEG Monitor",
+            "End-Tidal CO₂ Monitor",
+            "Pulmonary Artery Catheter",
+            "Infusion Pump",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "Which of the following patients is NOT typically admitted to the ICU?",
+          options: [
+            "A patient requiring CPAP with BiPAP support",
+            "A patient with mild CHF and stable vital signs",
+            "A patient with severe septic shock",
+            "A patient requiring invasive neurological monitoring",
+          ],
+          correctIndex: 1,
+        },
+        // Questions
+        {
+          question: "What is the primary role of an Intensive Care Unit (ICU)?",
+          options: [
+            "Providing routine check-ups",
+            "Providing advanced medical care for critically ill patients",
+            "Conducting outpatient surgeries",
+            "Managing chronic diseases",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a type of ICU organized by patient age group?",
+          options: [
+            "Neurological ICU",
+            "Trauma ICU",
+            "Pediatric ICU",
+            "Cardiac ICU",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "A patient with diabetic ketoacidosis would most likely be admitted to which ICU?",
+          options: [
+            "Surgical ICU",
+            "Medical ICU",
+            "Neonatal ICU",
+            "Trauma ICU",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is NOT a criterion for ICU admission?",
+          options: [
+            "Mild congestive heart failure",
+            "Multi-organ failure requiring support",
+            "Acute respiratory failure needing mechanical ventilation",
+            "Severe shock requiring vasopressors",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "What is the nurse-to-patient ratio for Level 3 ICU patients?",
+          options: ["1:1", "1:2", "1:3", "1:4"],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "What is the role of a critical care pharmacist in the ICU?",
+          options: [
+            "Performing surgical procedures",
+            "Preventing drug interactions",
+            "Providing physical therapy",
+            "Managing ventilator settings",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which equipment is used for continuous renal replacement therapy in the ICU?",
+          options: [
+            "Mechanical ventilator",
+            "Dialysis machine",
+            "Intra-aortic balloon pump",
+            "Defibrillator",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "A patient requiring non-invasive ventilation (CPAP or BIPAP) would be classified under which level of care?",
+          options: ["Level 0", "Level 1", "Level 2", "Level 3"],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "Which of the following patients would be classified as Priority 1 for ICU admission?",
+          options: [
+            "A patient with metastatic cancer complicated infection and airway obstruction",
+            "A patient requiring ventilator support and vasoactive infusions",
+            "A terminal cancer patient unresponsive to chemotherapy",
+            "A patient with stable diabetic ketoacidosis",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What is the primary purpose of ECMO in the ICU?",
+          options: [
+            "To Provide respiratory support for patient with respiratory failure",
+            "To temporarily replace heart and/or lung function",
+            "To deliver electrical shocks to restore heart rhythm",
+            "To assist in cardiac support for cardiogenic shock",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a discharge criterion for ICU patients?",
+          options: [
+            "Hemodynamic instability",
+            "Resolution of acute illness",
+            "Need for continuous vasopressors",
+            "Comatosed patient",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "A patient with a pH < 7.1 would qualify for ICU admission under which model?",
+          options: [
+            "Level of Care-Based Model",
+            "Triage-Based Prioritization Model",
+            "Diagnosis-Based Model",
+            "Objective Parameters-Based Model",
+          ],
+          correctIndex: 3,
+        },
+
+        {
+          question:
+            "Which of the following is an example of Advanced Respiratory Support?",
+          options: [
+            "Nasal cannula oxygen",
+            "Non-invasive ventilation (BIPAP)",
+            "Invasive mechanical ventilation via endotracheal tube",
+            "Intravenous therapy and blood collection",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "What is the role of a physiotherapist in the ICU?",
+          options: [
+            "Administering medications",
+            "Facilitating early mobilization",
+            "Managing ventilator settings",
+            "Performing surgeries",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following patients would be classified under Level 1 care?",
+          options: [
+            "A diabetic patient receiving continuous insulin infusion",
+            "A patient with multi-organ failure",
+            "A patient on invasive mechanical ventilation",
+            "A patient with cardiac arrest",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "What is the primary responsibility of an intensivist in the ICU?",
+          options: [
+            "Providing nutritional support",
+            "Leading patient care and coordinating with specialists",
+            "Conducting radiological imaging",
+            "Ensure early detection of patient deterioration",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is NOT a life support equipment in the ICU?",
+          options: [
+            "Mechanical ventilator",
+            "Syringe pump",
+            "ECMO",
+            "Dialysis machine",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "A patient with acute stroke and altered mental status would qualify for ICU admission under which model?",
+          options: [
+            "Diagnosis-Based Model",
+            "Triage-Based Prioritization Model",
+            "Level of Care-Based Model",
+            "Objective Parameters-Based Model",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "Which of the following is a key contribution of ICU nurses?",
+          options: [
+            "Performing surgeries",
+            "Early detection of patient deterioration",
+            "Ensure evidence-based management",
+            "Optimizing respiratory support",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the purpose of an intra-aortic balloon pump (IABP)?",
+          options: [
+            "To provide renal support",
+            "To assist in cardiac support for cardiogenic shock",
+            "To temporarily replace lung and heart functions",
+            "To provide continuous renal replacement therapy",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "Which of the following is a criterion for ICU discharge?",
+          options: [
+            "Need for continuous invasive monitoring",
+            "Hemodynamic stability without vasopressors",
+            "Unresolved acute illness",
+            "Frequent titration of medications",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "A patient with a potassium level of 7.5 would qualify for ICU admission under which model?",
+          options: [
+            "Objective Parameters-Based Model",
+            "Triage-Based Prioritization Model",
+            "Diagnosis-Based Model",
+            "Level of Care-Based Model",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "Which of the following is an example of Basic Cardiovascular Support?",
+          options: [
+            "Multiple intravenous vasoactive drugs",
+            "Intra-aortic balloon pump",
+            "Single intravenous vasoactive drug",
+            "ECMO",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "What is the role of psychologists/psychiatrists in the ICU?",
+          options: [
+            "Providing 24/7 patient monitoring",
+            "Providing mental health support to patients and families",
+            "Performing invasive procedures",
+            "Conduct pulmonary function assessments",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following patients would be classified as Priority 4 for ICU admission?",
+          options: [
+            "A patient with severe sepsis",
+            "A terminal patient with irreversible brain damage",
+            "A patient requiring mechanical ventilation",
+            "A patient with acute respiratory failure",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What is the function of a pulmonary artery catheter?",
+          options: [
+            "To measure exhaled CO2 levels",
+            "To monitor cardiac output",
+            "To provide nutritional support",
+            "To administer medications",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a responsibility of social workers in the ICU?",
+          options: [
+            "Managing ventilator settings",
+            "Assisting with discharge planning and connecting families with resources",
+            "Guiding discussions on end-of-life care",
+            "Administering medications",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "A patient requiring single or multiple vasoactive infusions would be classified under which level of care?",
+          options: ["Level 1", "Level 2", "Level 3", "Level 0"],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a key role of dietitians in the ICU?",
+          options: [
+            "Managing ventilator settings",
+            "Designing enteral and parenteral feeding plans",
+            "Performing surgeries",
+            "Administering medications",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What is the primary purpose of a crash cart in the ICU?",
+          options: [
+            "To provide nutritional support",
+            "To store life-saving medications and equipment for emergencies",
+            "To monitor cardiac output",
+            "To administer dialysis",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a criterion for ICU admission under the Diagnosis-Based Model?",
+          options: [
+            "Mild dehydration",
+            "Fulminant hepatic failure",
+            "COPD",
+            "Minor skin infection",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is an example of Advanced Cardiovascular Support?",
+          options: [
+            "Single intravenous vasoactive drug",
+            "Multiple intravenous vasoactive drugs",
+            "Nasal cannula oxygen",
+            "Chest physiotherapy",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What is the primary role of the ethics team in the ICU?",
+          options: [
+            "Managing ventilator settings",
+            "Guiding discussions on end-of-life care",
+            "Assist with discharge planning",
+            "Administering medications",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following is a key contribution of respiratory therapists in the ICU?",
+          options: [
+            "Administering medications",
+            "Reducing ventilator-associated complications",
+            "Performing surgeries",
+            "Managing hospital finances",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the primary purpose of point-of-care ultrasound in the ICU?",
+          options: [
+            "To examine airway and suctioning in ventilated patients",
+            "To assist in cardiac evaluation and fluid status assessment",
+            "To monitor brain activity changes and seizure",
+            "To enable bedside imaging for lung and heart assessments",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "All of the following are types of ICUs classified by pathological conditions EXCEPT:",
+          options: [
+            "Medical ICU",
+            "Surgical ICU",
+            "Adult ICU",
+            "Trauma ICU",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "In the Triage-Based Prioritization Model, which of the following has a low likelihood of benefit from ICU admission?",
+          options: [
+            "Priority 1",
+            "Priority 2",
+            "Priority 3",
+            "Priority 4",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "A patient requiring invasive mechanical ventilation would be treated in:",
+          options: [
+            "Acute ward",
+            "HDU",
+            "ICU",
+            "Normal ward",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "The High Dependency Unit (HDU) corresponds to which level of care?",
+          options: [
+            "Level 0",
+            "Level 1",
+            "Level 2",
+            "Level 3",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "Which of the following is a criterion for ICU discharge?",
+          options: [
+            "Need for hourly vital signs monitoring",
+            "Ability to maintain adequate oxygenation with minimal support",
+            "Unresolved metabolic instability",
+            "Continuous need for vasopressors",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "All of the following patient conditions qualify for Level 3 (Full Intensive Care Support) EXCEPT:",
+          options: [
+            "Basic respiratory support + Neurological support",
+            "Basic cardiovascular support + Renal support",
+            "Basic respiratory support + Basic cardiovascular support",
+            "All of the above fall under Level 3",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "Level 0, 1, 2 and 3 are critically ill patients who require intensive care.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "The ICU is designed to provide routine care for stable patients.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Neonatal ICUs (NICUs) manage premature and critically ill infants.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "Level 2 ICU patients require a nurse-to-patient ratio of 2:1.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "ECMO is used to temporarily replace heart and/or lung function.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "ICU discharge criteria include the need for continuous vasopressors.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "A patient with a sodium level of 115 would qualify for ICU admission under the Level of Care-Based Model.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Children who have undergone surgery and at risk of deterioration are admitted to the Surgical ICU.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Priority 1 patients in the Triage-Based Prioritization Model are those with terminal illnesses.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "ICU nurses play no role in detecting patient deterioration.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "A patient with acute renal failure requiring dialysis would be classified under Level 2 care.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "In triage-based prioritization, Priority 1 and 2 have therapeutic limitations.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "ICU discharge requires collaboration among the multidisciplinary team.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "A patient with a MAP of 55 would unqualify for ICU admission under the Objective Parameters-Based Model.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Basic Respiratory Support includes invasive mechanical ventilation.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Level 1 care is for patients requiring multi-organ support.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "A patient with a glucose level of 700 mg/dL would not qualify for ICU admission.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "Physiotherapists in the ICU focus on preventing ICU-acquired weakness.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "ICU admission criteria are designed to optimize resource utilization.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+      ];
+
+      let currentQuestionIndex = 0;
+      let score = 0;
+
+      const startBtn = document.getElementById("start-btn");
+      const nextBtn = document.getElementById("next-btn");
+      const tryAgainBtn = document.getElementById("try-again-btn");
+      const quizBox = document.getElementById("quiz-box");
+      const startBox = document.getElementById("start-box");
+      const questionNumberElement = document.getElementById("question-number");
+      const questionText = document.getElementById("question-text");
+      const answerButtons = document.getElementById("answer-buttons");
+      const resultBox = document.getElementById("result-box");
+      const scoreText = document.getElementById("score-text");
+      const themeToggleBtn = document.getElementById("theme-toggle");
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      function isTrueFalseQuestion(questionObj) {
+        const opts = questionObj.options;
+        return (
+          opts.length === 2 && opts.includes("True") && opts.includes("False")
+        );
+      }
+
+      function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        shuffleArray(allQuestions);
+        startBox.classList.add("hide");
+        resultBox.classList.add("hide");
+        quizBox.classList.remove("hide");
+        setNextQuestion();
+      }
+
+      function setNextQuestion() {
+        resetState();
+        if (currentQuestionIndex < allQuestions.length) {
+          showQuestion(allQuestions[currentQuestionIndex]);
+        } else {
+          showResult();
+        }
+      }
+
+      function showQuestion(questionObj) {
+        questionNumberElement.textContent = `Question ${
+          currentQuestionIndex + 1
+        } of ${allQuestions.length}`;
+        questionText.textContent = questionObj.question;
+
+        const optionsWithFlag = questionObj.options.map((opt, i) => ({
+          text: opt,
+          isCorrect: i === questionObj.correctIndex,
+        }));
+
+        if (!isTrueFalseQuestion(questionObj)) {
+          const fixedOptions = [
+            "All of the above",
+            "All are true",
+            "All are false",
+            "All are correct",
+            "All of the answers are correct",
+            "All of the above fall under Level 3",
+            "None of the above",
+          ];
+          const fixedOptionIndex = optionsWithFlag.findIndex((option) =>
+            fixedOptions.includes(option.text.trim())
+          );
+
+          if (fixedOptionIndex !== -1) {
+            const fixedOption = optionsWithFlag.splice(fixedOptionIndex, 1)[0];
+            shuffleArray(optionsWithFlag);
+            optionsWithFlag.push(fixedOption);
+          } else {
+            shuffleArray(optionsWithFlag);
+          }
+        }
+
+        optionsWithFlag.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option.text;
+          button.classList.add("answer-btn");
+          button.addEventListener("click", () =>
+            selectAnswer(button, option.isCorrect)
+          );
+          answerButtons.appendChild(button);
+        });
+      }
+
+      function resetState() {
+        nextBtn.disabled = true;
+        answerButtons.innerHTML = "";
+      }
+
+      function selectAnswer(button, isCorrect) {
+        const buttons = answerButtons.querySelectorAll("button");
+        buttons.forEach((btn) => (btn.disabled = true));
+
+        if (isCorrect) {
+          button.classList.add("correct");
+          score++;
+        } else {
+          button.classList.add("wrong");
+          buttons.forEach((btn) => {
+            if (
+              btn.textContent ===
+              allQuestions[currentQuestionIndex].options[
+                allQuestions[currentQuestionIndex].correctIndex
+              ]
+            ) {
+              btn.classList.add("correct");
+            }
+          });
+        }
+
+        nextBtn.disabled = false;
+      }
+
+      function showResult() {
+        quizBox.classList.add("hide");
+        resultBox.classList.remove("hide");
+        scoreText.textContent = `${score} out of ${allQuestions.length}`;
+      }
+
+      // Theme toggle
+      themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggleBtn.textContent = document.body.classList.contains("dark")
+          ? "Light mode"
+          : "Dark mode";
+      });
+
+      // Event listeners
+      startBtn.addEventListener("click", startQuiz);
+      nextBtn.addEventListener("click", () => {
+        currentQuestionIndex++;
+        setNextQuestion();
+      });
+      tryAgainBtn.addEventListener("click", startQuiz);
+    </script>
+  </body>
+</html>
